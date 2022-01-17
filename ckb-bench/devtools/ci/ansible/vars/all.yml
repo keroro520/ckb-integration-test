@@ -32,7 +32,7 @@ ckb_miner_workers:
 # ansible-ckb-benchmark variables
 ckb_benchmark_owner_privkey: "{{ ckb_block_assembler.key }}"
 ckb_benchmark_params:
-  - { tx_interval_ms: 0, bench_time_ms: 300000, n_inout: 1, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, pre_mined_blocks: 1172, mining_interval_ms: 1000 }
-  - { tx_interval_ms: 0, bench_time_ms: 300000, n_inout: 2, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, pre_mined_blocks: 1172, mining_interval_ms: 1000 }
-  - { tx_interval_ms: 1, bench_time_ms: 300000, n_inout: 1, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, pre_mined_blocks: 1172, mining_interval_ms: 1000 }
-  - { tx_interval_ms: 1, bench_time_ms: 300000, n_inout: 2, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, pre_mined_blocks: 1172, mining_interval_ms: 1000 }
+  - { tx_interval_ms: 0, bench_time_ms: 300000, n_inout: 1, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, premine_blocks: 1172, mining_interval_ms: 1000 }
+  - { tx_interval_ms: 0, bench_time_ms: 300000, n_inout: 2, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, premine_blocks: 1172, mining_interval_ms: 1000 }
+  - { tx_interval_ms: 1, bench_time_ms: 300000, n_inout: 1, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, premine_blocks: 1172, mining_interval_ms: 1000 }
+  - { tx_interval_ms: 1, bench_time_ms: 300000, n_inout: 2, n_users: 1000000, cells_per_user: 1, capacity_per_cell: 7100000000, premine_blocks: 1172, mining_interval_ms: 1000 }
