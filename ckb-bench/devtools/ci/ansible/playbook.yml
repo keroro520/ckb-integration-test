@@ -41,7 +41,6 @@
             ckb_urls: "{{ ckb_urls + [ ckb_url ] }}"
           with_items: "{{ groups.instances }}"
       tags:
-        - ckb_benchmark_prepare
         - ckb_benchmark_start
 
     # NOTE: It seems bug that when uses `include_role` inside block statement,
@@ -50,11 +49,12 @@
     - name: Start CKB Benchmark
       vars:
         ckb_benchmark_rpc_urls: "{{ ckb_urls }}"
+        ckb_benchmark_param: "{{ item }}"
       include_role:
         name: ansible-ckb-benchmark
         public: false
+      with_items: "{{ ckb_benchmark_params }}"
       tags:
-        - ckb_benchmark_prepare
         - ckb_benchmark_start
 
     - name: Fetch CKB Benchmark Logfiles
