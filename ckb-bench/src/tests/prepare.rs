@@ -29,7 +29,7 @@ fn test_prepare() {
         .collect::<Vec<_>>()
         .join(",");
     let node = nodes.get_node("node2021_1");
-    let n_users = 10;
+    let n_users = 100000;
     let cells_per_user = 1;
     let capacity_per_cell = 7100000000;
     let genesis_block = node.get_block_by_number(0);

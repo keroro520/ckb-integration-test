@@ -631,7 +631,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-testkit"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "ckb-crypto",
  "ckb-error 0.101.3",

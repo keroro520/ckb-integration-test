@@ -221,55 +221,82 @@ pub fn dispatch(
     ckb_testkit::info!("finished dispatch");
 }
 
+fn collect_inputs(nodes: &[Node], owner: &User, inputs: &[CellMeta], senders: &[&User]) {
+    let inputs_capacity: u64 = inputs.iter().map(|cell| cell.capacity().as_u64()).sum();
+    // TODO estimate tx fee
+    let fee = inputs.len() as u64 * 1000;
+    let output = CellOutput::new_builder()
+        .capacity((inputs_capacity - fee).pack())
+        .lock(owner.single_secp256k1_lock_script_via_data())
+        .build();
+    let unsigned_tx = TransactionBuilder::default()
+        .inputs(
+            inputs
+                .iter()
+                .map(|cell| CellInput::new(cell.out_point.clone(), 0)),
+        )
+        .output(output)
+        .output_data(Default::default())
+        .cell_dep(owner.single_secp256k1_cell_dep())
+        .build();
+    let mut tx = unsigned_tx;
+    for sender in senders {
+        let witness = sender
+            .single_secp256k1_signed_witness(&tx)
+            .as_bytes()
+            .pack();
+        tx = tx
+            .as_advanced_builder()
+            .witness(witness)
+            .build();
+    }
+    let result = maybe_retry_send_transaction(&nodes[0], &tx);
+    assert!(
+        result.is_ok(),
+        "collect-transaction {:#x} should be ok but got {}",
+        tx.hash(),
+        result.unwrap_err()
+    );
+}
+
 pub fn collect(nodes: &[Node], owner: &User, users: &[User]) {
     ckb_testkit::info!("collect with params --n-users {}", users.len());
     let n_users = users.len();
     let mut last_logging_time = Instant::now();
-    for (i_user, user) in users.iter().enumerate() {
+    let mut i_user = 0;
+    let mut pending_inputs = Vec::new();
+    let mut pending_senders = Vec::new();
+
+    while let Some(user) = users.get(i_user) {
         let live_cells = user.get_spendable_single_secp256k1_cells(&nodes[0]);
         if live_cells.is_empty() {
+            i_user += 1;
             continue;
         }
-        for chunk in live_cells.chunks(100) {
-            let inputs = chunk;
-            let inputs_capacity: u64 = inputs.iter().map(|cell| cell.capacity().as_u64()).sum();
-            // TODO estimate tx fee
-            let fee = inputs.len() as u64 * 1000;
-            let output = CellOutput::new_builder()
-                .capacity((inputs_capacity - fee).pack())
-                .lock(owner.single_secp256k1_lock_script_via_data())
-                .build();
-            let unsigned_tx = TransactionBuilder::default()
-                .inputs(
-                    inputs
-                        .iter()
-                        .map(|cell| CellInput::new(cell.out_point.clone(), 0)),
-                )
-                .output(output)
-                .output_data(Default::default())
-                .cell_dep(owner.single_secp256k1_cell_dep())
-                .build();
-            let witness = user
-                .single_secp256k1_signed_witness(&unsigned_tx)
-                .as_bytes()
-                .pack();
-            let signed_tx = unsigned_tx
-                .as_advanced_builder()
-                .set_witnesses(vec![witness])
-                .build();
-            let result = maybe_retry_send_transaction(&nodes[0], &signed_tx);
-            if last_logging_time.elapsed() > Duration::from_secs(30) {
-                last_logging_time = Instant::now();
-                ckb_testkit::info!("already collected {}/{} users", i_user, n_users)
+
+        let inputs_len_soft_limit = 1000;
+        for chunk in live_cells.chunks(inputs_len_soft_limit) {
+            pending_inputs.extend(chunk.into_iter().cloned());
+            pending_senders.push(user);
+
+            if pending_inputs.len() >= inputs_len_soft_limit {
+                collect_inputs(nodes, owner, &pending_inputs, &pending_senders);
+                pending_inputs = Vec::new();
+                pending_senders = Vec::new();
             }
-            assert!(
-                result.is_ok(),
-                "collect-transaction {:#x} should be ok but got {}",
-                signed_tx.hash(),
-                result.unwrap_err()
-            );
+        }
+
+        i_user += 1;
+        if last_logging_time.elapsed() > Duration::from_secs(30) {
+            last_logging_time = Instant::now();
+            ckb_testkit::info!("already collected {}/{} users", i_user, n_users)
         }
     }
+
+    if !pending_inputs.is_empty() {
+        collect_inputs(nodes, owner, &pending_inputs, &pending_senders);
+    }
+    ckb_testkit::info!("already collected {}/{} users", i_user, n_users);
     ckb_testkit::info!("finished collecting");
 }
 
